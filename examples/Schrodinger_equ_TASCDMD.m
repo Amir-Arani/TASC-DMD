@@ -30,7 +30,7 @@ clc; clear; close all;
 % -------------------------------------------------------------------------
 % 0. Setup
 % -------------------------------------------------------------------------
-addpath('../src');          % Add DMD function files to path
+%addpath('../src');          % Add DMD function files to path
 
 % -------------------------------------------------------------------------
 % 1. Load NLS data
@@ -53,7 +53,7 @@ u_noisy     = u_clean + noise_mask .* randn(size(u_clean));
 
 % Choose which dataset to analyse (swap comments to toggle noise)
 X_input = u_noisy;    % noisy
-% X_input = u_clean;  % clean
+%X_input = u_clean;  % clean
 
 % -------------------------------------------------------------------------
 % 3. TASC-DMD
@@ -110,8 +110,8 @@ end
 % --- Map modes back to physical space ---
 H_dmd = zeros(n, nt2, d);
 for j = 1 : d
-    Phi_rom_j    = Phi(1+(j-1)*r0 : j*r0, :);
-    psi_phys_j   = Ur0(:, :, j) * Phi_rom_j;
+    Phi_rom_j      = Phi(1+(j-1)*r0 : j*r0, :);
+    psi_phys_j     = Ur0(:, :, j) * Phi_rom_j;
     H_dmd(:, :, j) = psi_phys_j * time_dynamics;
 end
 
@@ -122,12 +122,12 @@ for j = 2 : d
 end
 
 % --- Correlation coefficient Cv (per snapshot, per delay level) ---
-Cv      = zeros(nt2, d);
+Cv       = zeros(nt2, d);
 Cv_cmplx = zeros(nt2, d);
 for j = 1 : d
     for i = 1 : nt2
-        Xn_org = normalize(H_tde(:, i, j), 'norm');
-        Xn_dmd = normalize(H_dmd(:, i, j), 'norm');
+        Xn_org         = normalize(H_tde(:, i, j), 'norm');
+        Xn_dmd         = normalize(H_dmd(:, i, j), 'norm');
         Cv_cmplx(i, j) = dot(Xn_org, Xn_dmd);
         Cv(i, j)       = abs(Cv_cmplx(i, j));
     end
@@ -150,9 +150,9 @@ end
 % -------------------------------------------------------------------------
 figure;
 hold on; grid on; axis square;
-scatter(real(omega_edmd),  imag(omega_edmd),  50, [0.2 0.4 0.8], 'o',  'LineWidth', 2, 'DisplayName', 'Exact DMD');
-scatter(real(omega_fbdmd), imag(omega_fbdmd), 50, [1.0 0.5 0.0], 's',  'LineWidth', 2, 'DisplayName', 'fbDMD');
-scatter(real(omega),       imag(omega),       50, [0.8 0.1 0.1], 'd',  'LineWidth', 2, 'DisplayName', 'TASC-DMD');
+scatter(real(omega_edmd),  imag(omega_edmd),  50, [0.2 0.4 0.8], 'o', 'LineWidth', 2, 'DisplayName', 'Exact DMD');
+scatter(real(omega_fbdmd), imag(omega_fbdmd), 50, [1.0 0.5 0.0], 's', 'LineWidth', 2, 'DisplayName', 'fbDMD');
+scatter(real(omega),       imag(omega),       50, [0.8 0.1 0.1], 'd', 'LineWidth', 2, 'DisplayName', 'TASC-DMD');
 xlabel('Re($\omega_k$)', 'Interpreter', 'latex', 'FontSize', 16, 'FontWeight', 'bold');
 ylabel('Im($\omega_k$)', 'Interpreter', 'latex', 'FontSize', 16, 'FontWeight', 'bold');
 legend('Location', 'northeastoutside');
@@ -167,23 +167,23 @@ title(sprintf('Eigenvalue spectrum  (r = %d, noise = %.0f%%)', r1, noise_level*1
 plot_params = {'EdgeColor', 'none'};
 cax_lim     = [0, 3.8];
 
-datasets = {X_win,          'Original (clean)', '';
-            u_noisy,        'Original (noisy)', '';
-            real(X_edmd),   'Exact DMD',         '';
-            real(X_fbdmd),  'fbDMD',             '';
-            real(X_TASC),   'TASC-DMD',          ''};
+datasets = {u_clean(:, tp1:tp2), 'Original (clean)';
+            u_noisy,             'Original (noisy)';
+            real(X_edmd),        'Exact DMD';
+            real(X_fbdmd),       'fbDMD';
+            real(X_TASC),        'TASC-DMD'};
 
 for k = 1 : size(datasets, 1)
     Zdata = datasets{k, 1};
     ttl   = datasets{k, 2};
-    if size(Zdata, 2) ~= size(Tgrid, 1)
-        continue;   % Skip if dimensions don't match this run's nt2
+    if size(Zdata, 2) ~= size(Tgrid, 2)
+        continue;   % Skip if time dimension does not match the grid
     end
     figure;
     surf(Xgrid, Tgrid, Zdata, plot_params{:});
     colormap('cool');  caxis(cax_lim);  colorbar;  zlim([0 4]);
-    xlabel('$x$', 'Interpreter', 'latex', 'FontSize', 18, 'FontWeight', 'bold');
-    ylabel('$t$', 'Interpreter', 'latex', 'FontSize', 18, 'FontWeight', 'bold');
+    xlabel('$x$',           'Interpreter', 'latex', 'FontSize', 18, 'FontWeight', 'bold');
+    ylabel('$t$',           'Interpreter', 'latex', 'FontSize', 18, 'FontWeight', 'bold');
     zlabel('$|\psi(x,t)|$', 'Interpreter', 'latex', 'FontSize', 18, 'FontWeight', 'bold');
     title(['NLS: ', ttl], 'FontSize', 14);
     set(gca, 'FontSize', 13, 'FontWeight', 'bold');

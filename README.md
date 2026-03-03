@@ -1,28 +1,8 @@
-# TASC-DMD: Time-Augmented, Space-Contracted Dynamic Mode Decomposition
+# TASC-DMD
 
-**Paper:** *A Novel Spatiotemporal Decomposition and Identification of Sparse Equations for Human Brain Deformation*
+MATLAB implementation of **Time-Augmented, Space-Contracted Dynamic Mode Decomposition (TASC-DMD)**.
 
-A.H.G. Arani¹², A.A. Alshareef³, D.L. Pham⁴, R.J. Okamoto¹, P.V. Bayly¹
-
-¹ Mechanical Engineering and Materials Science, Washington University in St. Louis  
-² Department of Neurosurgery, Washington University School of Medicine  
-³ Department of Mechanical Engineering, University of South Carolina  
-⁴ Department of Radiology and Radiological Sciences, Uniformed Services University  
-
-[![MATLAB](https://img.shields.io/badge/MATLAB-R2022a%2B-blue)](https://www.mathworks.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-
----
-
-## Overview
-
-TASC-DMD is a novel dynamic mode decomposition framework for discovering low-dimensional models of complex dynamical systems from spatiotemporal data. It combines:
-
-- **Time-Augmented embedding** — a 3D Hankel-based delay embedding that captures slow-time dynamics
-- **Space-Contracted projection** — a sequential SVD reduction that compresses high-dimensional spatial fields into a compact latent space
-- **DMD in the latent space** — efficient spectral decomposition with improved noise robustness
-
-The algorithm is validated on the nonlinear Schrödinger equation and applied to characterize 4D strain fields from tagged MRI brain data. A companion SINDy step (TASC-SINDy) discovers sparse governing equations directly in TASC coordinates.
+> **Paper:** *[TASC DMD Paper — title and citation to be added after publication]*
 
 ---
 
@@ -31,128 +11,79 @@ The algorithm is validated on the nonlinear Schrödinger equation and applied to
 ```
 TASC-DMD/
 ├── src/
-│   ├── DMD_exact.m       — Exact (or standard) DMD with optional time-delay embedding
-│   ├── fbDMD.m           — Forward-Backward DMD with optional time-delay embedding
-│   └── nls_rhs.m         — ODE RHS for the nonlinear Schrödinger equation (Fourier space)
-│
+│   ├── DMD_exact.m          Core DMD solver with time-delay embedding
+│   ├── fbDMD.m              Forward-Backward DMD (noise-robust)
+│   └── nls_rhs.m            ODE RHS for the NLS benchmark equation
 ├── examples/
-│   ├── generate_NLS_data.m        — Solve the NLS equation and save data
-│   └── Schrodinger_equ_TASCDMD.m  — Benchmark TASC-DMD vs Exact DMD vs fbDMD
-│
+│   ├── generate_NLS_data.m         Generate NLS benchmark data (paper)
+│   ├── Schrodinger_equ_TASCDMD.m   Main NLS benchmark (reproduces paper results)
+│   ├── generate_AdvDiff_data.m     Generate advection-diffusion data (paper)
+│   ├── AdvDiff_TASCDMD.m           Advection-diffusion benchmark (paper)
+│   ├── generate_Burgers_data.m     Generate inviscid Burgers data (NOT in paper)
+│   └── Burgers_TASCDMD.m           Burgers benchmark (NOT in paper)
 ├── docs/
-│   └── index.html         — GitHub Pages project website
-│
+│   └── index.html           GitHub Pages project site
 └── README.md
 ```
 
 ---
 
-## Requirements
-
-| Requirement        | Version        |
-|--------------------|----------------|
-| MATLAB             | R2022a or later |
-| Signal Processing Toolbox | (optional, for `normalize`) |
-| Statistics and Machine Learning Toolbox | (optional) |
-
-> **Note:** The `normalize` function used in the Cv calculation requires MATLAB R2020b or later.
-
----
-
 ## Quick Start
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/<your-username>/TASC-DMD.git
-cd TASC-DMD
-```
-
-### 2. Generate the benchmark data
-
-In MATLAB:
 ```matlab
+% Add src/ to path
+addpath('src');
 cd examples
-run generate_NLS_data.m
-% Saves NLS_data.mat to the examples/ folder
-```
 
-### 3. Run the TASC-DMD benchmark
+% --- NLS benchmark (reproduces paper results) ---
+run generate_NLS_data.m          % saves NLS_data.mat
+run Schrodinger_equ_TASCDMD.m    % comparison figures
 
-```matlab
-run Schrodinger_equ_TASCDMD.m
-```
+% --- Advection-Diffusion benchmark (known eigenvalues, paper) ---
+run generate_AdvDiff_data.m      % saves AdvDiff_data.mat
+run AdvDiff_TASCDMD.m            % eigenvalue parabola comparison
 
-This reproduces the eigenvalue spectrum comparison and field reconstructions from Figure 2 of the paper.
-
----
-
-## Function Reference
-
-### `DMD_exact(X, dt, p, tde, r, var)`
-
-Exact or standard DMD with optional time-delay embedding.
-
-| Parameter | Description |
-|-----------|-------------|
-| `X`       | Data matrix `[n × m]` |
-| `dt`      | Time step |
-| `p`       | Temporal subsampling factor |
-| `tde`     | Number of time delays (1, 2, or 3) |
-| `r`       | Rank truncation |
-| `var`     | `0` = exact DMD, `1` = standard DMD |
-
-Returns: `[nt2, Phi, lambda, omega, time_dynamics, X_dmd, Cv]`
-
----
-
-### `fbDMD(X, dt, p, tde, r)`
-
-Forward-Backward DMD — reduces bias from sensor noise by combining forward and backward linear operators via their geometric mean.
-
-Same input/output interface as `DMD_exact` (without the `var` argument).
-
----
-
-### `nls_rhs(t, psit, dummy, k)`
-
-ODE right-hand side for the NLS equation in Fourier space. Pass to `ode45`.
-
-```matlab
-[t, psit] = ode45(@(tt, pp) nls_rhs(tt, pp, [], k), t_span, psit0, opts);
+% --- Inviscid Burgers (NOT in paper — additional example) ---
+run generate_Burgers_data.m      % saves Burgers_data.mat
+run Burgers_TASCDMD.m            % reconstruction + Cv comparison
 ```
 
 ---
 
-## Key Parameters (TASC-DMD)
+## Benchmarks
 
-| Parameter | Symbol | Description |
-|-----------|--------|-------------|
-| `d`       | *d*    | Number of time-delay levels (Hankel depth) |
-| `r0`      | *r₀*   | Rank of spatial basis per delay level (space-contraction) |
-| `r1`      | *r₁*   | Rank for the final DMD step (mode truncation) |
+### NLS — Nonlinear Schrödinger Equation *(paper)*
+Two-soliton solution. Tests eigenvalue recovery under 20% noise.
 
-For the NLS benchmark: `d = 11`, `r0 = 11`, `r1 = 9`.
+### Advection-Diffusion *(paper)*
+Linear PDE with analytically known eigenvalues lying on a parabola
+`Re(ω) = −(ν/U₀²)·Im(ω)²`. Analytical curve overlaid on DMD spectrum.
+Tested at 50% noise.
+
+### Inviscid Burgers *(NOT in paper — additional example)*
+Small-amplitude traveling waves with near-imaginary eigenvalues.
+Demonstrates TASC-DMD generality on a nonlinear hyperbolic PDE.
+Tested at 50% noise. Cv reported for all methods.
+
+---
+
+## Key Parameters
+
+| Parameter | Symbol | Description | Default |
+|-----------|--------|-------------|---------|
+| `d`  | *d*  | Time-delay levels (Hankel depth) | 11 |
+| `r0` | *r₀* | Spatial basis rank per delay | 11 |
+| `r1` | *r₁* | Final DMD rank | 9 |
+| `noise_level` | — | Gaussian noise fraction | 0.20–0.50 |
 
 ---
 
 ## Citation
 
-If you use this code, please cite:
-
-```bibtex
-@article{arani2025tascdmd,
-  title   = {A Novel Spatiotemporal Decomposition and Identification of
-             Sparse Equations for Human Brain Deformation},
-  author  = {Arani, A.H.G. and Alshareef, A.A. and Pham, D.L. and
-             Okamoto, R.J. and Bayly, P.V.},
-  journal = {(journal name)},
-  year    = {2025}
-}
-```
+> *[To be populated after publication]*
 
 ---
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+MIT License. See `LICENSE` for details.
